@@ -38,6 +38,12 @@ export function Home() {
           <div><dt>Username</dt><dd>{user.username}</dd></div>
           <div><dt>Role</dt><dd className="role-tag">{user.role}</dd></div>
         </dl>
+        <p className="muted">Published tools in your workspace</p>
+        <Link className="app-card-link" to="/apps/0814100e-c259-426a-81b0-68f73f9da561">
+          <span className="app-icon">R</span>
+          <span><strong>Refund approvals</strong><small>Review synthetic refund requests</small></span>
+          <span className="app-arrow">→</span>
+        </Link>
       </section>
     </main>
   );
