@@ -308,24 +308,11 @@ export function createApiRouter(db: AppDatabase, hooks: AppHooks = {}): Router {
         return sendError(res, 404, "NOT_FOUND", "Action button block not found");
       }
 
-      if (req.body?.revisionId !== app.revision_id) {
-        return sendError(
-          res,
-          409,
-          "STALE_REVISION",
-          "This app has been republished; reload before deciding",
-        );
-      }
-
       const parsedBody = ExecuteBodySchema.safeParse(req.body);
       if (!parsedBody.success) {
         return sendError(res, 422, "INVALID_INPUT", "Invalid action request", parsedBody.error.issues);
       }
       const body = parsedBody.data;
-      const dataset = getDataset(app.definition.datasetId);
-      if (!dataset) return sendError(res, 404, "NOT_FOUND", "Dataset not found");
-      const action = dataset.actions.find(({ id }) => id === block.config.actionId);
-      if (!action) return sendError(res, 404, "NOT_FOUND", "Configured action not found");
 
       const requestHash = createHash("sha256")
         .update(
@@ -359,6 +346,20 @@ export function createApiRouter(db: AppDatabase, hooks: AppHooks = {}): Router {
         }
         return res.status(existing.responseStatus).json(JSON.parse(existing.responseJson));
       }
+
+      if (body.revisionId !== app.revision_id) {
+        return sendError(
+          res,
+          409,
+          "STALE_REVISION",
+          "This app has been republished; reload before deciding",
+        );
+      }
+
+      const dataset = getDataset(app.definition.datasetId);
+      if (!dataset) return sendError(res, 404, "NOT_FOUND", "Dataset not found");
+      const action = dataset.actions.find(({ id }) => id === block.config.actionId);
+      if (!action) return sendError(res, 404, "NOT_FOUND", "Configured action not found");
 
       try {
         const responseBody = db.transaction(() => {
