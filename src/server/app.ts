@@ -10,9 +10,15 @@ import {
   requireAuth,
 } from "./auth.js";
 import { sendError } from "./errors.js";
+import { createApiRouter } from "./routes/api.js";
+
+export interface AppHooks {
+  beforeAuditInsert?: () => void;
+}
 
 export interface CreateAppOptions {
   db: AppDatabase;
+  hooks?: AppHooks;
 }
 
 function allowedOrigins(): string[] {
@@ -27,7 +33,7 @@ function allowedOrigins(): string[] {
   ];
 }
 
-export function createApp({ db }: CreateAppOptions) {
+export function createApp({ db, hooks }: CreateAppOptions) {
   const app = express();
   app.disable("x-powered-by");
   app.use(mutationSecurity(allowedOrigins()));
@@ -43,6 +49,7 @@ export function createApp({ db }: CreateAppOptions) {
   });
   app.post("/api/auth/login", loginHandler);
   app.post("/api/auth/logout", logoutHandler);
+  app.use("/api", createApiRouter(db, hooks));
 
   const clientPath = resolve("dist/client");
   if (existsSync(clientPath)) {
