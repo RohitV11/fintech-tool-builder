@@ -14,6 +14,7 @@ export const refundAppDefinition: AppDefinition = {
         columns: ["customer_ref", "amount_cents", "currency", "status", "created_at"],
         defaultStatusFilter: "pending",
         pageSize: 10,
+        showStatusBadge: true,
       },
     },
     {

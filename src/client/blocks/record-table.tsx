@@ -57,6 +57,16 @@ export function RecordTableInspector({ config, onChange, dataset }: InspectorPro
           {[5, 10, 25].map((size) => <option key={size} value={size}>{size}</option>)}
         </select>
       </label>
+      <label className="check-label">
+        <input
+          type="checkbox"
+          checked={tableConfig.showStatusBadge ?? false}
+          onChange={(event) =>
+            update({ ...tableConfig, showStatusBadge: event.target.checked })
+          }
+        />
+        Show status badge
+      </label>
       <fieldset>
         <legend>Columns</legend>
         {dataset.fields.map((field) => (
@@ -216,16 +226,20 @@ export function RecordTableRenderer({ block: rawBlock, ctx }: RendererProps) {
                 <th scope="row">{String(record.id)}</th>
                 {block.config.columns.map((key) => {
                   const value = record[key];
+                  const field = ctx.dataset.fields.find((candidate) => candidate.key === key);
                   if (key === statusField || key === "state") {
+                    const status = formatValue(value, field, record);
                     return (
                       <td key={key}>
-                        <span className={`status-pill ${statusClass(value)}`}>{formatValue(value, undefined, record)}</span>
+                        {block.config.showStatusBadge ? (
+                          <span className={`status-pill ${statusClass(value)}`}>{status}</span>
+                        ) : status}
                       </td>
                     );
                   }
                   return (
                     <td key={key}>
-                      {formatValue(value, ctx.dataset.fields.find((field) => field.key === key), record)}
+                      {formatValue(value, field, record)}
                     </td>
                   );
                 })}

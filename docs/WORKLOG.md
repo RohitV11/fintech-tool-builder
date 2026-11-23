@@ -176,3 +176,35 @@ All timestamps are UTC.
 - The fresh-checkout builds emitted the existing non-blocking Zod annotation
   and >500 kB bundle-size warnings. The CI workflow itself was not executed.
 - **Verification complete:** 2026-11-23 05:20 UTC.
+
+## Follow-up change — record-table status badge
+
+- **Start:** 2026-11-23 05:22 UTC.
+- Added a default-off `showStatusBadge` config and inspector checkbox. Status
+  cells render plain text by default and use the existing colored status-pill
+  styles when enabled; the refunds seed enables the option.
+- Preserved the KYC and flags seed JSON shape without the new key so the
+  legacy-config validation and runtime rendering tests exercise definitions
+  that predate the option.
+- An initial multi-file patch did not match the table renderer context; after
+  inspecting the current file, the renderer, server default, seed, and tests
+  were applied in focused patches.
+- **Branch verification:** 2026-11-23 05:24 UTC. `npm run check` passed:
+  typecheck, 5 Vitest files / 54 tests, and production build. Build output
+  retained the existing non-blocking Zod annotation and bundle-size warnings.
+- The first full Playwright run passed 3 tests and failed the new runtime test
+  because a non-exact KYC heading locator matched the page and two block
+  headings. Exact heading selectors fixed the test; the focused rerun
+  `npm run test:e2e -- tests/e2e/reuse-runtime.spec.ts` passed (1 test). The
+  final full E2E suite later passed on `main` (4 tests).
+- **Main verification:** `npm run check` passed on `main` (typecheck, 5 Vitest
+  files / 54 tests, and build). The first full E2E run passed 3 of 4 tests but
+  intermittently missed the builder's third palette drop. A focused retry
+  exposed the resize test's fixed 65px movement was not enough to cross one
+  grid track (width remained 4 instead of the expected 5); a second full run
+  still missed the palette drop. The regression now drops into a calculated
+  collision-free grid cell and derives its resize movement from the grid
+  track. Focused `builder.spec.ts` passed (1 test); final full E2E rerun on
+  `main` passed all 4 tests: assembly, builder regression, refund runtime, and
+  legacy KYC/flags runtime actions.
+- **Verification complete:** 2026-11-23 05:31 UTC.

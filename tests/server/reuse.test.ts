@@ -359,4 +359,27 @@ describe("KYC and staging feature flag apps", () => {
       expect(definition.blocks.every((block) => allowedBlockTypes.has(block.type))).toBe(true);
     }
   });
+
+  it("enables status badges only in refunds and preserves legacy KYC and flags definitions", () => {
+    const tableConfig = (appId: string) => {
+      const row = db
+        .prepare(
+          `SELECT app_revisions.definition_json AS definitionJson
+           FROM apps
+           JOIN app_revisions ON app_revisions.id = apps.published_revision_id
+           WHERE apps.id = ?`,
+        )
+        .get(appId) as { definitionJson: string };
+      const definition = JSON.parse(row.definitionJson) as {
+        blocks: { type: string; config: Record<string, unknown> }[];
+      };
+      const table = definition.blocks.find((block) => block.type === "record_table");
+      if (!table) throw new Error(`Missing record table for app ${appId}`);
+      return table.config;
+    };
+
+    expect(tableConfig(refundAppId).showStatusBadge).toBe(true);
+    expect(tableConfig(kycAppId)).not.toHaveProperty("showStatusBadge");
+    expect(tableConfig(flagsAppId)).not.toHaveProperty("showStatusBadge");
+  });
 });

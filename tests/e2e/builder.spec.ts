@@ -72,6 +72,8 @@ test("builder edits, saves, previews, publishes, and runs a refunds app", async 
 
   const tableId = await dropFromPalette(page, "Record table", { x: 30, y: 30 });
   await page.getByLabel("Title", { exact: true }).fill("Refund queue");
+  await expect(page.getByLabel("Show status badge")).not.toBeChecked();
+  await page.getByLabel("Show status badge").check();
   await setGeometry(page, { x: 0, y: 0, width: 12, height: 3 });
 
   const detailsId = await dropFromPalette(page, "Record details", { x: 30, y: 500 });
@@ -85,7 +87,13 @@ test("builder edits, saves, previews, publishes, and runs a refunds app", async 
   expect(detailsAfter).not.toBeNull();
   expect(detailsAfter!.x).toBeGreaterThan(detailsBefore!.x);
 
-  const actionId = await dropFromPalette(page, "Action button", { x: 500, y: 500 });
+  const canvasBox = await page.locator(".react-grid-layout").boundingBox();
+  expect(canvasBox).not.toBeNull();
+  const columnWidth = (canvasBox!.width - 11 * 10) / 12;
+  const actionId = await dropFromPalette(page, "Action button", {
+    x: 8 * (columnWidth + 10) + columnWidth / 2,
+    y: 6 * (30 + 10) + 15,
+  });
   await page.getByLabel("Button label", { exact: true }).fill("Approve refund now");
   await setGeometry(page, { x: 6, y: 4, width: 4, height: 4 });
   const actionItem = page.locator(`#editor-block-${actionId}`);
@@ -93,11 +101,16 @@ test("builder edits, saves, previews, publishes, and runs a refunds app", async 
   await expect(resizeHandle).toBeVisible();
   await resizeHandle.hover();
   const handleBox = await resizeHandle.boundingBox();
+  const gridBox = await page.locator(".react-grid-layout").boundingBox();
   expect(handleBox).not.toBeNull();
+  expect(gridBox).not.toBeNull();
+  const columnTrack = (gridBox!.width + 10) / 12;
   await page.mouse.down();
-  await page.mouse.move(handleBox!.x + handleBox!.width / 2 + 65, handleBox!.y + handleBox!.height / 2 + 40, {
-    steps: 5,
-  });
+  await page.mouse.move(
+    handleBox!.x + handleBox!.width / 2 + columnTrack + 3,
+    handleBox!.y + handleBox!.height / 2 + 43,
+    { steps: 5 },
+  );
   await page.mouse.up();
   await expect(page.getByLabel("Width", { exact: true })).toHaveValue("5");
   await expect(page.getByLabel("Height", { exact: true })).toHaveValue("5");
@@ -124,6 +137,8 @@ test("builder edits, saves, previews, publishes, and runs a refunds app", async 
   await expect(page.getByLabel("Height", { exact: true })).toHaveValue("5");
   await page.locator(`#editor-block-${auditId}`).click();
   await expect(page.getByLabel("Title", { exact: true })).toHaveValue("Decision audit");
+  await page.locator(`#editor-block-${tableId}`).click();
+  await expect(page.getByLabel("Show status badge")).toBeChecked();
 
   await page.getByRole("link", { name: "Preview", exact: true }).click();
   await page.getByRole("row").nth(1).click();
