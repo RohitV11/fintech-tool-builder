@@ -243,3 +243,11 @@ All timestamps are UTC.
 - `npm run db:reset && npm start` — reset the demo data and left the rebuilt
   server running on port 3000; HTTP 200, shell `8e7dc6`, Node PID `65605`.
 - **Verification and screenshots complete:** 2026-11-23 05:40 UTC.
+
+## Review deliverables and known issues
+
+- Added `docs/KEY_DECISIONS.md` (one-pager), `docs/EVALUATION.md` (build vs buy; economics inputs still needed) and `docs/LOOM_SCRIPT.md`.
+- Human input over the whole build: the written plan, three short answers about the repo, time limit and PR workflow, plus defects reported from visual review. No hand-written code.
+- Devin usage (ACUs) was not captured here; read it from the Devin usage dashboard for this session.
+- Known issue: `tests/e2e/builder.spec.ts` palette drag-and-drop was intermittently flaky (one of several full runs missed a drop; reruns passed). It needs hardening before CI is relied on.
+- The CI workflow has not run because no GitHub remote exists yet.
