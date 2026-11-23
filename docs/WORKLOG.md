@@ -155,3 +155,16 @@ All timestamps are UTC.
 - **Verification complete:** 2026-11-23 05:15 UTC.
 - The E2E build emitted the existing non-blocking Zod annotation and
   >500 kB bundle-size warnings.
+
+## Phase 6 — CI workflow and project guide
+
+- **Start:** 2026-11-23 05:17 UTC.
+- Added GitHub Actions checks using the Node version in `.nvmrc`, the requested
+  typecheck, unit test, build, Chromium dependency installation, and Playwright
+  E2E sequence. The workflow itself is authored but not run in this task.
+- Replaced the bootstrap/refunds-only README with the current setup and
+  demo-only credentials, directory-to-publish/review/audit/reuse walkthrough,
+  architecture, extension instructions, simulated notices, and limitations.
+- Corrected walkthrough copy after checking the audit renderer: the UI shows
+  action, timestamp, reason, and actor; before/after snapshots are stored by
+  the server but are not displayed by this renderer.
