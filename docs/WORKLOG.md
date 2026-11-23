@@ -196,7 +196,7 @@ All timestamps are UTC.
   because a non-exact KYC heading locator matched the page and two block
   headings. Exact heading selectors fixed the test; the focused rerun
   `npm run test:e2e -- tests/e2e/reuse-runtime.spec.ts` passed (1 test). The
-  final full E2E suite is scheduled on `main`.
+  final full E2E suite later passed on `main` (4 tests).
 - **Main verification:** `npm run check` passed on `main` (typecheck, 5 Vitest
   files / 54 tests, and build). The first full E2E run passed 3 of 4 tests but
   intermittently missed the builder's third palette drop. A focused retry
@@ -205,4 +205,6 @@ All timestamps are UTC.
   still missed the palette drop. The regression now drops into a calculated
   collision-free grid cell and derives its resize movement from the grid
   track. Focused `builder.spec.ts` passed (1 test); final full E2E rerun on
-  `main` is pending.
+  `main` passed all 4 tests: assembly, builder regression, refund runtime, and
+  legacy KYC/flags runtime actions.
+- **Verification complete:** 2026-11-23 05:31 UTC.
