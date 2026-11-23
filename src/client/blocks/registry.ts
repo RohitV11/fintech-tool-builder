@@ -33,6 +33,7 @@ export const blockRegistry: Record<Block["type"], BlockRegistryEntry> = {
       columns: dataset.fields.slice(0, 4).map((field) => field.key),
       defaultStatusFilter: null,
       pageSize: 10,
+      showStatusBadge: false,
     }),
     defaultSize: { w: 12, h: 10 },
     Inspector: RecordTableInspector,

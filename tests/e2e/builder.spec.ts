@@ -72,6 +72,8 @@ test("builder edits, saves, previews, publishes, and runs a refunds app", async 
 
   const tableId = await dropFromPalette(page, "Record table", { x: 30, y: 30 });
   await page.getByLabel("Title", { exact: true }).fill("Refund queue");
+  await expect(page.getByLabel("Show status badge")).not.toBeChecked();
+  await page.getByLabel("Show status badge").check();
   await setGeometry(page, { x: 0, y: 0, width: 12, height: 3 });
 
   const detailsId = await dropFromPalette(page, "Record details", { x: 30, y: 500 });
@@ -124,6 +126,8 @@ test("builder edits, saves, previews, publishes, and runs a refunds app", async 
   await expect(page.getByLabel("Height", { exact: true })).toHaveValue("5");
   await page.locator(`#editor-block-${auditId}`).click();
   await expect(page.getByLabel("Title", { exact: true })).toHaveValue("Decision audit");
+  await page.locator(`#editor-block-${tableId}`).click();
+  await expect(page.getByLabel("Show status badge")).toBeChecked();
 
   await page.getByRole("link", { name: "Preview", exact: true }).click();
   await page.getByRole("row").nth(1).click();

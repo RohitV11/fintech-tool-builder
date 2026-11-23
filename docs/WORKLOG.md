@@ -176,3 +176,24 @@ All timestamps are UTC.
 - The fresh-checkout builds emitted the existing non-blocking Zod annotation
   and >500 kB bundle-size warnings. The CI workflow itself was not executed.
 - **Verification complete:** 2026-11-23 05:20 UTC.
+
+## Follow-up change — record-table status badge
+
+- **Start:** 2026-11-23 05:22 UTC.
+- Added a default-off `showStatusBadge` config and inspector checkbox. Status
+  cells render plain text by default and use the existing colored status-pill
+  styles when enabled; the refunds seed enables the option.
+- Preserved the KYC and flags seed JSON shape without the new key so the
+  legacy-config validation and runtime rendering tests exercise definitions
+  that predate the option.
+- An initial multi-file patch did not match the table renderer context; after
+  inspecting the current file, the renderer, server default, seed, and tests
+  were applied in focused patches.
+- **Branch verification:** 2026-11-23 05:24 UTC. `npm run check` passed:
+  typecheck, 5 Vitest files / 54 tests, and production build. Build output
+  retained the existing non-blocking Zod annotation and bundle-size warnings.
+- The first full Playwright run passed 3 tests and failed the new runtime test
+  because a non-exact KYC heading locator matched the page and two block
+  headings. Exact heading selectors fixed the test; the focused rerun
+  `npm run test:e2e -- tests/e2e/reuse-runtime.spec.ts` passed (1 test). The
+  final full E2E suite is scheduled on `main`.
