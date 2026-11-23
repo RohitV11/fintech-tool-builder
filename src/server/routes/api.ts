@@ -9,6 +9,7 @@ import {
   getDataset,
   InvalidTransitionError,
   safeCatalog,
+  type DatasetAdapter,
 } from "../datasets/registry.js";
 import "../datasets/refunds.js";
 import "../datasets/kyc.js";
@@ -76,12 +77,18 @@ function getPublishedApp(db: AppDatabase, appId: string): PublishedApp | undefin
 function projectRecord(
   row: Record<string, unknown>,
   fields: string[],
-  statusField: string,
+  dataset: DatasetAdapter,
 ): Record<string, unknown> {
-  const keys = new Set(["id", "version", statusField, ...fields]);
-  return Object.fromEntries(
+  const keys = new Set(["id", "version", dataset.statusField, ...fields]);
+  const record = Object.fromEntries(
     [...keys].filter((key) => key in row).map((key) => [key, row[key]]),
   );
+  return {
+    ...record,
+    availableActions: dataset.actions
+      .filter((action) => action.canApply(row))
+      .map((action) => action.id),
+  };
 }
 
 function findBlock(definition: AppDefinition, blockId: string): Block | undefined {
@@ -537,7 +544,7 @@ export function createApiRouter(db: AppDatabase, hooks: AppHooks = {}): Router {
         pageSize: block.config.pageSize,
       });
       return res.status(200).json({
-        rows: result.rows.map((row) => projectRecord(row, block.config.columns, dataset.statusField)),
+        rows: result.rows.map((row) => projectRecord(row, block.config.columns, dataset)),
         total: result.total,
         page: query.page,
         pageSize: block.config.pageSize,
@@ -562,7 +569,7 @@ export function createApiRouter(db: AppDatabase, hooks: AppHooks = {}): Router {
       const row = dataset.get(db, pathParam(req.params.recordId));
       if (!row) return sendError(res, 404, "NOT_FOUND", "Record not found");
       return res.status(200).json({
-        record: projectRecord(row, block.config.fields, dataset.statusField),
+        record: projectRecord(row, block.config.fields, dataset),
       });
     },
   );
@@ -654,7 +661,7 @@ export function createApiRouter(db: AppDatabase, hooks: AppHooks = {}): Router {
       });
       res.status(200).json({
         rows: result.rows.map((row) =>
-          projectRecord(row, block.config.columns, dataset.statusField),
+          projectRecord(row, block.config.columns, dataset),
         ),
         total: result.total,
         page: query.page,
@@ -679,7 +686,7 @@ export function createApiRouter(db: AppDatabase, hooks: AppHooks = {}): Router {
       const row = dataset.get(db, pathParam(req.params.recordId));
       if (!row) return sendError(res, 404, "NOT_FOUND", "Record not found");
       res.status(200).json({
-        record: projectRecord(row, block.config.fields, dataset.statusField),
+        record: projectRecord(row, block.config.fields, dataset),
       });
     },
   );

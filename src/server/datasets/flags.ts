@@ -29,12 +29,18 @@ function getFlag(db: AppDatabase, id: string) {
   return row ? asFlagRecord(row) : undefined;
 }
 
+function isEnabled(row: Record<string, unknown>): boolean {
+  return row.enabled === true || row.enabled === 1;
+}
+
+function canApplyState(row: Record<string, unknown>, enabled: boolean): boolean {
+  return row.environment === "staging" && isEnabled(row) !== enabled;
+}
+
 function applyState(enabled: boolean, label: string) {
   return (db: AppDatabase, row: Record<string, unknown>) => {
-    const currentEnabled = row.enabled === true || row.enabled === 1;
-    if (row.environment !== "staging" || currentEnabled === enabled) {
-      throw new InvalidTransitionError();
-    }
+    if (!canApplyState(row, enabled)) throw new InvalidTransitionError();
+    const currentEnabled = isEnabled(row);
     if (typeof row.id !== "string" || typeof row.version !== "number") {
       throw new Error("Feature flag row is missing its identifier or version");
     }
@@ -114,6 +120,7 @@ const flags: DatasetAdapter = {
       label: "Enable flag",
       requiresReason: true,
       permission: "actions.execute",
+      canApply: (row) => canApplyState(row, true),
       apply: applyState(true, "Enable"),
     },
     {
@@ -121,6 +128,7 @@ const flags: DatasetAdapter = {
       label: "Disable flag",
       requiresReason: true,
       permission: "actions.execute",
+      canApply: (row) => canApplyState(row, false),
       apply: applyState(false, "Disable"),
     },
   ],

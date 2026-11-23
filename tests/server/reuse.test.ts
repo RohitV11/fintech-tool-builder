@@ -61,6 +61,12 @@ function blockId(
   return block.id;
 }
 
+function detailsBlockId(definition: typeof kycAppDefinition): string {
+  const block = definition.blocks.find((candidate) => candidate.type === "record_details");
+  if (!block || block.type !== "record_details") throw new Error("Missing record details block");
+  return block.id;
+}
+
 function execute(agent: Agent, appId: string, blockId: string, body: unknown) {
   return agent
     .post(`/api/apps/${appId}/blocks/${blockId}/execute`)
@@ -148,6 +154,41 @@ describe("KYC and staging feature flag apps", () => {
     ).toBe(true);
     expect(enabledFlags.body.rows.every((row: { state: string }) => row.state === "enabled")).toBe(true);
     expect(disabledFlags.body.rows.every((row: { state: string }) => row.state === "disabled")).toBe(true);
+  });
+
+  it("returns server-computed action availability with published and draft records", async () => {
+    const reviewer = await signedIn();
+    const builder = await signedIn("builder");
+
+    const pendingKyc = await reviewer.get(
+      `/api/apps/${kycAppId}/blocks/${detailsBlockId(kycAppDefinition)}/records/kyc_001`,
+    );
+    expect(pendingKyc.body.record.availableActions).toEqual(
+      expect.arrayContaining(["kyc.approve", "kyc.reject"]),
+    );
+
+    const approvedKyc = await reviewer.get(
+      `/api/apps/${kycAppId}/blocks/${detailsBlockId(kycAppDefinition)}/records/kyc_003`,
+    );
+    expect(approvedKyc.body.record.availableActions).toEqual([]);
+
+    const disabledFlag = await reviewer.get(
+      `/api/apps/${flagsAppId}/blocks/${detailsBlockId(flagsAppDefinition)}/records/ff_002`,
+    );
+    expect(disabledFlag.body.record.availableActions).toEqual(["flags.enable"]);
+
+    const draftDisabledFlag = await builder.get(
+      `/api/apps/${flagsAppId}/draft/blocks/${detailsBlockId(flagsAppDefinition)}/records/ff_002`,
+    );
+    expect(draftDisabledFlag.body.record.availableActions).toEqual(["flags.enable"]);
+
+    const disabledFlagRows = await reviewer.get(
+      `/api/apps/${flagsAppId}/blocks/main-table/records?status=disabled`,
+    );
+    expect(
+      disabledFlagRows.body.rows.find((row: { id: string }) => row.id === "ff_002")
+        .availableActions,
+    ).toEqual(["flags.enable"]);
   });
 
   it.each([
