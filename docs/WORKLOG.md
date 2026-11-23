@@ -89,3 +89,69 @@ All timestamps are UTC.
   pending refund with a reason, and saw the updated status and audit entry.
 - The builder currently offers registered datasets only; KYC and feature-flag
   workflows remain for Phase 5, which was not started.
+
+## Builder canvas review correction
+
+- **Start:** Exact first-edit time was not captured; work began after Phase 4
+  verification at 2026-11-23 04:43 UTC.
+- **Browser verification:** 2026-11-23 05:02 UTC.
+- Reproduced the empty canvas in Chromium. `EditPage` returned its loading view
+  before rendering the element with `containerRef`; `useContainerWidth`'s
+  initial effect saw a null ref and returned without observing the container.
+  Moved the hook and grid into `BuilderGrid`, which mounts only after the
+  loaded draft is available.
+- Added `tests/e2e/builder.spec.ts` for dirty navigation and beforeunload,
+  palette drops of all four blocks, inspector and geometry edits, drag and
+  resize, save/reload persistence, preview-disabled actions, publish and
+  republish visibility, and approval in a fresh reviewer context. Playwright
+  uses one worker to serialize state-mutating tests against the shared e2e DB.
+- Corrections during verification: reading `DataTransfer.getData()` during
+  `dragover` returned an empty value, so `onDropDragOver` now recognizes a
+  per-block MIME type from `dataTransfer.types` and reads the selected block
+  value on `drop`. Early test drops overlapped existing blocks and were moved
+  to empty canvas positions. The resize test now hovers the handle before
+  dragging it. The reviewer assertion initially lacked a configured status
+  field, so the test enables Status in the details inspector. A redundant
+  action-selector step was removed because the new action block already
+  defaults to the dataset's approve action.
+- `npm run typecheck` — passed.
+- `npm run test:e2e -- tests/e2e/builder.spec.ts` — passed, 1 test.
+- Chromium visual check confirmed the grid and four blocks render; manual
+  block drag, numeric X/Y/Width/Height edits, and resize changed their visible
+  positions and dimensions. Screenshots:
+  `/home/ubuntu/screenshots/ss_2dcc45d7.png`,
+  `/home/ubuntu/screenshots/ss_8625eda3.png`,
+  `/home/ubuntu/screenshots/ss_2ceb8a48.png`, and
+  `/home/ubuntu/screenshots/ss_c323c794.png`.
+
+## Phase 5 — reusable KYC and staging flags apps
+
+- **Start:** 2026-11-23 05:12 UTC.
+- Registered KYC approvals and staging-only flag actions through the dataset
+  registry, with required reasons, current-state transition checks, derived
+  flag status, and the exact simulated notices. Added the two published
+  definitions exported from the builder UI and wired them into both database
+  initialization and reset.
+- Added server coverage for KYC and flag transitions, reason enforcement,
+  idempotent replays, cross-dataset record isolation, derived staging state,
+  and the three seeded apps' registered block types. The existing builder API
+  test continues to cover publishing a refund definition with a KYC action.
+- Early assembly E2E attempts timed out on accessible-name and block-count
+  assertions. Switched to role-based comboboxes, waited for inspector
+  selection changes, configured geometry before checking the final block
+  count, and used the app's initial table while palette-dropping the remaining
+  blocks. The separate builder regression E2E covers dropping all four block
+  types. The full E2E run then exposed missing grid children after palette
+  additions despite the inspector selection; keying React Grid Layout to the
+  block ID list makes its internal layout resynchronize on block-set changes.
+- `npm run test:e2e -- tests/e2e/assemble-apps.spec.ts` — passed, 1 test.
+- `npm run typecheck` — passed.
+- `npm test` — passed, 5 files and 52 tests.
+- `npm run test:e2e` — passed, 3 tests (builder regression, both app
+  assemblies, and refund runtime).
+- The E2E web server ran `npm run build` and `npm run db:reset`; both
+  succeeded. Two subsequent `DB_PATH=./data/e2e.db npm run db:init` calls
+  also succeeded, verifying idempotent initialization with all three apps.
+- **Verification complete:** 2026-11-23 05:15 UTC.
+- The E2E build emitted the existing non-blocking Zod annotation and
+  >500 kB bundle-size warnings.

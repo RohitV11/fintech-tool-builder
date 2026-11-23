@@ -10,6 +10,7 @@
     "setup": "npm ci && npm run db:init",
     "db:init": "tsx scripts/init-db.ts",
     "db:reset": "tsx scripts/reset-demo.ts",
+    "export:seed-apps": "tsx scripts/export-seed-apps.ts",
     "dev": "concurrently -k \"tsx watch src/server/index.ts\" \"vite --host 127.0.0.1\"",
     "build": "tsc -p tsconfig.server.json && vite build",
     "start": "node dist/server/src/server/index.js",
