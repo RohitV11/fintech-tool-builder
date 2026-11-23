@@ -123,3 +123,35 @@ All timestamps are UTC.
   `/home/ubuntu/screenshots/ss_8625eda3.png`,
   `/home/ubuntu/screenshots/ss_2ceb8a48.png`, and
   `/home/ubuntu/screenshots/ss_c323c794.png`.
+
+## Phase 5 — reusable KYC and staging flags apps
+
+- **Start:** 2026-11-23 05:12 UTC.
+- Registered KYC approvals and staging-only flag actions through the dataset
+  registry, with required reasons, current-state transition checks, derived
+  flag status, and the exact simulated notices. Added the two published
+  definitions exported from the builder UI and wired them into both database
+  initialization and reset.
+- Added server coverage for KYC and flag transitions, reason enforcement,
+  idempotent replays, cross-dataset record isolation, derived staging state,
+  and the three seeded apps' registered block types. The existing builder API
+  test continues to cover publishing a refund definition with a KYC action.
+- Early assembly E2E attempts timed out on accessible-name and block-count
+  assertions. Switched to role-based comboboxes, waited for inspector
+  selection changes, configured geometry before checking the final block
+  count, and used the app's initial table while palette-dropping the remaining
+  blocks. The separate builder regression E2E covers dropping all four block
+  types. The full E2E run then exposed missing grid children after palette
+  additions despite the inspector selection; keying React Grid Layout to the
+  block ID list makes its internal layout resynchronize on block-set changes.
+- `npm run test:e2e -- tests/e2e/assemble-apps.spec.ts` — passed, 1 test.
+- `npm run typecheck` — passed.
+- `npm test` — passed, 5 files and 52 tests.
+- `npm run test:e2e` — passed, 3 tests (builder regression, both app
+  assemblies, and refund runtime).
+- The E2E web server ran `npm run build` and `npm run db:reset`; both
+  succeeded. Two subsequent `DB_PATH=./data/e2e.db npm run db:init` calls
+  also succeeded, verifying idempotent initialization with all three apps.
+- **Verification complete:** 2026-11-23 05:15 UTC.
+- The E2E build emitted the existing non-blocking Zod annotation and
+  >500 kB bundle-size warnings.

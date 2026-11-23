@@ -114,6 +114,7 @@ function BuilderGrid({
       <div ref={containerRef} className="builder-grid-container">
         {mounted && (
           <ReactGridLayout
+            key={JSON.stringify(definition.blocks.map((block) => block.id))}
             width={width}
             cols={12}
             rowHeight={30}
