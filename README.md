@@ -1,9 +1,9 @@
 # Fintech Tool Builder
 
-A local-only prototype of an internal-tool builder. This bootstrap provides
-session-based demo authentication, SQLite persistence, and synthetic refund,
-KYC, and feature-flag records. Published workflows and the visual builder are
-added in later phases.
+A local-only prototype of an internal-tool builder. The bootstrap includes
+session-based demo authentication, and the first vertical slice is a published
+refund-review app backed by SQLite. The visual builder and reusable runtime
+editor are planned for later phases.
 
 ## Requirements and setup
 
@@ -39,6 +39,17 @@ never initializes or resets the database automatically.
 These fixed credentials are for local demonstration only and must not be used
 for real accounts or exposed on a network.
 
+## Refund review slice
+
+Sign in as `reviewer` to search, filter, and paginate synthetic refund requests.
+Selecting a row loads its details and audit history. Reviewer decisions require
+a reason and are guarded by optimistic versions and idempotency keys. Approval
+records a decision only; no refund is executed. The builder and viewer accounts
+can read the published app but cannot submit a decision.
+
+The database also contains synthetic KYC and staging-flag records for later
+phases; the current published workflow is refunds only.
+
 ## Verification
 
 ```sh
@@ -55,4 +66,6 @@ production build.
 
 The database contains synthetic data only. This prototype has one synthetic
 organization and does not implement SSO, record assignment, or multi-tenant
-isolation. It has no published tools or visual builder yet.
+isolation. It has no visual builder yet. Audit events are persistent and
+protected by application permissions, but are not tamper-proof against
+database administrators.
