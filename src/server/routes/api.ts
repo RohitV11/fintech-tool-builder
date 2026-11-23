@@ -169,6 +169,7 @@ function defaultDefinition(name: string, datasetId: string): AppDefinition | und
           columns: dataset.fields.slice(0, 4).map((field) => field.key),
           defaultStatusFilter: null,
           pageSize: 10,
+          showStatusBadge: false,
         },
       },
     ],

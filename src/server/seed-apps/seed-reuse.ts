@@ -16,6 +16,7 @@ function seedPublishedApp(
   appId: string,
   revisionId: string,
   definition: (typeof kycAppDefinition),
+  definitionJson = JSON.stringify(definition),
 ): void {
   db.prepare(
     `INSERT OR IGNORE INTO apps (id, name, created_by, created_at, published_revision_id)
@@ -25,17 +26,29 @@ function seedPublishedApp(
     `INSERT OR IGNORE INTO app_revisions
       (id, app_id, revision_number, definition_json, published_by, published_at)
      VALUES (?, ?, 1, ?, 'user_builder', ?)`,
-  ).run(revisionId, appId, JSON.stringify(definition), seedTime);
+  ).run(revisionId, appId, definitionJson, seedTime);
   db.prepare(
     `INSERT OR IGNORE INTO app_drafts (app_id, definition_json, version, updated_by, updated_at)
      VALUES (?, ?, 1, 'user_builder', ?)`,
-  ).run(appId, JSON.stringify(definition), seedTime);
+  ).run(appId, definitionJson, seedTime);
 }
 
 export function seedPublishedKycApp(db: AppDatabase): void {
-  seedPublishedApp(db, kycAppId, "b8a7e238-6a41-48df-bc79-e940908e3a5f", kycAppDefinition);
+  seedPublishedApp(
+    db,
+    kycAppId,
+    "b8a7e238-6a41-48df-bc79-e940908e3a5f",
+    kycAppDefinition,
+    JSON.stringify(kycSeed),
+  );
 }
 
 export function seedPublishedFlagsApp(db: AppDatabase): void {
-  seedPublishedApp(db, flagsAppId, "e1db4909-9407-4058-9f3e-4c56ff864833", flagsAppDefinition);
+  seedPublishedApp(
+    db,
+    flagsAppId,
+    "e1db4909-9407-4058-9f3e-4c56ff864833",
+    flagsAppDefinition,
+    JSON.stringify(flagsSeed),
+  );
 }

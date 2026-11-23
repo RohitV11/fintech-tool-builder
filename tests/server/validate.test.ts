@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SafeCatalog } from "../../src/shared/catalog-types.js";
+import { AppDefinitionSchema } from "../../src/shared/schema.js";
 import { refundAppDefinition } from "../../src/server/seed-apps/refunds.js";
 import { validateDefinition } from "../../src/shared/validate.js";
 import "../../src/server/datasets/refunds.js";
@@ -14,6 +15,21 @@ function copyDefinition() {
 describe("validateDefinition", () => {
   it("accepts the seeded refund definition", () => {
     expect(validateDefinition(refundAppDefinition, catalog)).toEqual({ ok: true });
+  });
+
+  it("accepts legacy table configs without a status-badge setting", () => {
+    const definition = copyDefinition();
+    const table = definition.blocks.find((block) => block.type === "record_table");
+    if (table?.type === "record_table") {
+      const legacyConfig = { ...table.config };
+      delete (legacyConfig as Partial<typeof legacyConfig>).showStatusBadge;
+      table.config = legacyConfig;
+    }
+
+    expect(validateDefinition(definition, catalog)).toEqual({ ok: true });
+    const parsed = AppDefinitionSchema.parse(definition);
+    const parsedTable = parsed.blocks.find((block) => block.type === "record_table");
+    expect(parsedTable?.type === "record_table" && parsedTable.config.showStatusBadge).toBe(false);
   });
 
   it("rejects a broken source table reference", () => {

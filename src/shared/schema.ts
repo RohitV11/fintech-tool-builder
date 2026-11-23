@@ -31,6 +31,7 @@ export const RecordTableConfigSchema = z
     columns: z.array(z.string()).min(1),
     defaultStatusFilter: z.string().nullable(),
     pageSize: z.union([z.literal(5), z.literal(10), z.literal(25)]).default(10),
+    showStatusBadge: z.boolean().default(false),
   })
   .strict();
 
