@@ -80,10 +80,101 @@ function gridLayout(definition: AppDefinition): GridLayoutItems {
   }));
 }
 
+interface BuilderGridProps {
+  definition: AppDefinition;
+  ctx: RendererContext;
+  selectedBlockId: string | null;
+  setBlockRef: (blockId: string, element: HTMLDivElement | null) => void;
+  selectBlock: (blockId: string) => void;
+  changeGridLayout: (layout: GridLayoutItems) => void;
+  dropBlock: (
+    layout: GridLayoutItems,
+    item: GridLayoutItems[number] | undefined,
+    event: Event,
+  ) => void;
+}
+
+function BuilderGrid({
+  definition,
+  ctx,
+  selectedBlockId,
+  setBlockRef,
+  selectBlock,
+  changeGridLayout,
+  dropBlock,
+}: BuilderGridProps) {
+  const { width, containerRef, mounted } = useContainerWidth({ measureBeforeMount: true });
+
+  return (
+    <section className="builder-canvas-wrap" aria-label="App layout">
+      <div className="builder-canvas-label">
+        <span>Layout canvas</span>
+        <small>12 columns · drag to move · resize from the corner</small>
+      </div>
+      <div ref={containerRef} className="builder-grid-container">
+        {mounted && (
+          <ReactGridLayout
+            key={JSON.stringify(definition.blocks.map((block) => block.id))}
+            width={width}
+            cols={12}
+            rowHeight={30}
+            compactType={null}
+            preventCollision
+            isDroppable
+            isDraggable
+            isResizable
+            layout={gridLayout(definition)}
+            onLayoutChange={changeGridLayout}
+            onDrop={dropBlock}
+            onDropDragOver={(event) => {
+              const type = (Object.keys(blockRegistry) as Block["type"][]).find((blockType) =>
+                event.dataTransfer.types.includes(
+                  `application/x-block-type-${blockType.replaceAll("_", "-")}`,
+                ),
+              );
+              return type ? blockRegistry[type].defaultSize : false;
+            }}
+            droppingItem={{ i: "__dropping-elem__", x: 0, y: 0, w: 4, h: 4 }}
+            draggableHandle=".editor-block-handle"
+            draggableCancel="input,textarea,button,select,a"
+            className="builder-grid"
+          >
+            {definition.blocks.map((block) => {
+              const Renderer = blockRegistry[block.type].Renderer;
+              return (
+                <div
+                  key={block.id}
+                  id={`editor-block-${block.id}`}
+                  ref={(element) => setBlockRef(block.id, element)}
+                  className={`builder-grid-item ${selectedBlockId === block.id ? "selected" : ""}`}
+                  tabIndex={0}
+                  onClick={() => selectBlock(block.id)}
+                  onFocus={() => selectBlock(block.id)}
+                >
+                  <div className="editor-block-handle">
+                    <span>{blockRegistry[block.type].label}</span>
+                    <span>{block.id}</span>
+                  </div>
+                  <Renderer block={block} ctx={ctx} />
+                </div>
+              );
+            })}
+          </ReactGridLayout>
+        )}
+        {!definition.blocks.length && (
+          <div className="builder-empty-canvas">
+            <strong>Start with a component</strong>
+            <span>Choose one from the palette or drag it here.</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function EditPage() {
   const { appId = "" } = useParams();
   const navigate = useNavigate();
-  const { width, containerRef, mounted } = useContainerWidth({ measureBeforeMount: true });
   const [definition, setDefinition] = useState<AppDefinition | null>(null);
   const [catalog, setCatalog] = useState<SafeCatalog | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -184,6 +275,10 @@ export function EditPage() {
 
   const selectBlock = useCallback((blockId: string) => {
     setSelectedBlockId(blockId);
+  }, []);
+
+  const setBlockRef = useCallback((blockId: string, element: HTMLDivElement | null) => {
+    blockRefs.current[blockId] = element;
   }, []);
 
   const addBlock = useCallback(
@@ -462,6 +557,10 @@ export function EditPage() {
               onClick={() => addBlock(entry.type)}
               onDragStart={(event) => {
                 event.dataTransfer.setData("application/x-block-type", entry.type);
+                event.dataTransfer.setData(
+                  `application/x-block-type-${entry.type.replaceAll("_", "-")}`,
+                  entry.type,
+                );
                 event.dataTransfer.effectAllowed = "copy";
               }}
             >
@@ -484,64 +583,15 @@ export function EditPage() {
             </section>
           )}
         </aside>
-        <section className="builder-canvas-wrap" aria-label="App layout">
-          <div className="builder-canvas-label">
-            <span>Layout canvas</span>
-            <small>12 columns · drag to move · resize from the corner</small>
-          </div>
-          <div ref={containerRef} className="builder-grid-container">
-            {mounted && (
-              <ReactGridLayout
-                width={width}
-                cols={12}
-                rowHeight={30}
-                compactType={null}
-                preventCollision
-                isDroppable
-                isDraggable
-                isResizable
-                layout={gridLayout(definition)}
-                onLayoutChange={changeGridLayout}
-                onDrop={dropBlock}
-                onDropDragOver={(event) => {
-                  const type = event.dataTransfer.getData("application/x-block-type") as Block["type"];
-                  return Object.hasOwn(blockRegistry, type) ? blockRegistry[type].defaultSize : false;
-                }}
-                droppingItem={{ i: "__dropping-elem__", x: 0, y: 0, w: 4, h: 4 }}
-                draggableHandle=".editor-block-handle"
-                draggableCancel="input,textarea,button,select,a"
-                className="builder-grid"
-              >
-                {definition.blocks.map((block) => {
-                  const Renderer = blockRegistry[block.type].Renderer;
-                  return (
-                    <div
-                      key={block.id}
-                      id={`editor-block-${block.id}`}
-                      ref={(element) => { blockRefs.current[block.id] = element; }}
-                      className={`builder-grid-item ${selectedBlockId === block.id ? "selected" : ""}`}
-                      tabIndex={0}
-                      onClick={() => selectBlock(block.id)}
-                      onFocus={() => selectBlock(block.id)}
-                    >
-                      <div className="editor-block-handle">
-                        <span>{blockRegistry[block.type].label}</span>
-                        <span>{block.id}</span>
-                      </div>
-                      <Renderer block={block} ctx={ctx} />
-                    </div>
-                  );
-                })}
-              </ReactGridLayout>
-            )}
-            {!definition.blocks.length && (
-              <div className="builder-empty-canvas">
-                <strong>Start with a component</strong>
-                <span>Choose one from the palette or drag it here.</span>
-              </div>
-            )}
-          </div>
-        </section>
+        <BuilderGrid
+          definition={definition}
+          ctx={ctx}
+          selectedBlockId={selectedBlockId}
+          setBlockRef={setBlockRef}
+          selectBlock={selectBlock}
+          changeGridLayout={changeGridLayout}
+          dropBlock={dropBlock}
+        />
         <aside className="builder-inspector" aria-label="Block inspector">
           <div className="builder-panel-heading"><h2>Inspector</h2></div>
           {selectedBlock && SelectedInspector ? (

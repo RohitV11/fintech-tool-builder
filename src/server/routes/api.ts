@@ -11,6 +11,8 @@ import {
   safeCatalog,
 } from "../datasets/registry.js";
 import "../datasets/refunds.js";
+import "../datasets/kyc.js";
+import "../datasets/flags.js";
 import {
   AppDefinitionSchema,
   ExecuteBodySchema,
