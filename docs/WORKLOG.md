@@ -42,3 +42,50 @@ All timestamps are UTC.
   to `approved` version 2, and the audit endpoint returned exactly one event
   with the submitted decision reason.
 - The server was stopped after the smoke test; port 3000 had no listener.
+
+## Phase 3 — reusable runtime blocks
+
+- **Start:** 2026-11-23 04:30 UTC (the idempotency-ordering fix was the first
+  commit on `phase-3-runtime-blocks`).
+- **End:** 2026-11-23 04:34 UTC (runtime-block implementation committed and
+  merged to local `main`).
+- Moved the table, details, action, and audit renderers into the block
+  registry; replaced the fixed refund page with a definition-driven runtime
+  and added the app directory.
+- The first regression test left the published pointer on the newer revision,
+  which affected later tests; the test now restores the pointer. The initial
+  typecheck also found references to a nonexistent catalog `statusField`;
+  renderers now derive the status field from catalog field metadata.
+- `npm test` — passed, 3 files and 30 tests.
+- `npm run typecheck` and `npm run build` — passed.
+- Commits `6a8d40e` and `329f8e6` were merged to local `main` by merge commit
+  `17c7d04`; no remote was created.
+
+## Phase 4 — draft builder and preview
+
+- **Start:** 2026-11-23 04:34 UTC (immediately after the Phase 3 merge;
+  exact first-edit time was not captured).
+- **Verification completed:** 2026-11-23 04:43 UTC.
+- Added builder-only app creation/duplication, optimistic draft saving,
+  validation-error persistence, transactional publish/revision/audit updates,
+  draft record/detail/audit reads, and builder app-list draft metadata.
+- Added the React Grid Layout editor, inspector and validation list, dirty
+  navigation protection, draft preview, directory create/duplicate controls,
+  and the Playwright refund-runtime smoke test. Chromium was installed with
+  Playwright.
+- Corrections during implementation: the first API patch did not match the
+  existing import context and was reapplied against the current file; the
+  builder stylesheet patch used the wrong runtime CSS path and was corrected.
+  Typecheck caught missing `x`/`y` on the grid's dropping item and a nullable
+  preview user; both were fixed. The first two e2e attempts assumed `rf_001`
+  was on the first page and then used an ambiguous status locator. The test
+  now selects the first visible pending row and scopes the status assertion to
+  the details definition.
+- `npm run typecheck` — passed.
+- `npm test` — passed, 4 files and 37 tests.
+- `npm run build` — passed. Rollup reported existing Zod annotation warnings
+  and a bundle-size advisory (>500 kB); neither prevented the build.
+- `npm run test:e2e` — passed, 1 test. The reviewer logged in, approved a
+  pending refund with a reason, and saw the updated status and audit entry.
+- The builder currently offers registered datasets only; KYC and feature-flag
+  workflows remain for Phase 5, which was not started.
