@@ -169,6 +169,33 @@ describe("refund app API and business actions", () => {
     expect(auditCount("rf_014")).toBe(1);
   });
 
+  it("replays a successful action after the app is republished", async () => {
+    const agent = await signedIn();
+    const pending = db
+      .prepare("SELECT id FROM refund_requests WHERE status = 'pending' LIMIT 1")
+      .get() as { id: string };
+    const body = actionBody(pending.id, { idempotencyKey: randomUUID() });
+    const first = await execute(agent, "approve-refund", body);
+    expect(first.status).toBe(200);
+
+    const nextRevisionId = randomUUID();
+    const revision = db
+      .prepare("SELECT definition_json FROM app_revisions WHERE id = ?")
+      .get(revisionId) as { definition_json: string };
+    db.prepare(
+      `INSERT INTO app_revisions
+        (id, app_id, revision_number, definition_json, published_by, published_at)
+       VALUES (?, ?, 2, ?, 'user_reviewer', ?)`,
+    ).run(nextRevisionId, appId, revision.definition_json, new Date().toISOString());
+    db.prepare("UPDATE apps SET published_revision_id = ? WHERE id = ?").run(nextRevisionId, appId);
+
+    const replay = await execute(agent, "approve-refund", body);
+    db.prepare("UPDATE apps SET published_revision_id = ? WHERE id = ?").run(revisionId, appId);
+    expect(replay.status).toBe(200);
+    expect(replay.body).toEqual(first.body);
+    expect(auditCount(pending.id)).toBe(1);
+  });
+
   it("rejects reuse of an idempotency key with a different payload", async () => {
     const agent = await signedIn();
     const key = randomUUID();
