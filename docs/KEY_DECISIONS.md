@@ -1,32 +1,43 @@
-# Key Decisions — Fintech Tool Builder (prototype)
+# Key Decisions: Fintech Tool Builder
 
-**Problem.** Internal operations teams need small review tools (refund approvals, KYC review, flag toggles) and currently build them in Power Apps. We tested whether a constrained, Devin-built builder can cover these tools with stronger engineering controls.
+## System overview
+- **What it is:** a local web app where builders visually assemble internal ops tools (refund approvals, KYC review, staging feature flags) from an approved catalog, then publish them for reviewers to use.
+- **Three surfaces:** an app directory; a builder (12-column drag/resize grid, inspector, live validation, preview, publish); and the runtime for published apps.
+- **Building blocks:** four shared blocks (record table, record details, action button, audit history), linked by stable block IDs.
+- **Roles:** builder (edit and publish apps), reviewer (run actions), viewer (read only). Roles are enforced on the server.
+- **Stack:** one TypeScript repo. React/Vite with react-grid-layout, Express, SQLite (better-sqlite3), and Zod shared by client and server. Tested with Vitest/Supertest (55 tests) and Playwright (5 end-to-end tests).
 
-**Why a constrained visual builder.** App creators get drag-and-drop layout (12-column grid, resize, numeric controls) and per-block configuration, but only from an **approved catalog** of four blocks (record table, record details, action button, audit history) plus registered datasets and actions. There are no formulas and no arbitrary code. Anything new (a block, dataset adapter or business action) is a reviewed code change, which is where Devin fits. This trades away Power Apps' breadth for predictable security and testability.
+## Major decisions and why
 
-**How it fits together.**
-- **Saved definitions:** an app is a JSON definition (schema version, name, one dataset, blocks with stable IDs, layout and config), validated by one shared Zod schema plus reference checks.
-- **Drafts and revisions:** drafts are versioned (optimistic locking). Publishing atomically creates an immutable revision and a publish audit event.
-- **Shared runtime blocks:** the runtime, preview and builder all render the same block registry. Refunds, KYC and flags use identical block code; KYC and flags were assembled in the builder UI, not coded.
-- **Backend controls:** the server derives the dataset and action from the *published* block, never from the request. Every call checks the session role (builder / reviewer / viewer). Record update, audit event and idempotency result commit in one SQLite transaction. Stale record versions, stale app revisions and invalid transitions return 409.
+**1. A constrained builder, not a general low-code tool.**
+Builders get only four blocks plus datasets and actions registered in code. There are no formulas or custom code. New capabilities are reviewed code changes, which is where Devin fits.
+*Why:* in fintech, a small catalog can be secured, tested and audited. *Gave up:* Power Apps' breadth.
 
-**What Devin delivered (observed).** From one written plan, Devin produced all six phases plus a follow-up change (an optional status badge, added to a shared block without breaking existing apps) in about 1.4 hours of wall-clock time (04:15–05:40 UTC, see WORKLOG.md), including a visual-review polish pass. The result has 55 server tests, 5 Playwright end-to-end tests, a CI workflow, README and seed data. Human input: the plan, three short answers, and no code.
+**2. Apps are data (JSON definitions), not generated code.**
+A definition holds a schema version, one dataset, and blocks with an ID, a grid layout and a config. Shared block components render it in the builder, preview and runtime.
+*Why:* creating or editing an app needs no build or deploy. Every app can be validated, diffed and versioned, and one Zod schema validates it in both browser and server. KYC and flags needed zero new UI code. *Gave up:* anything the blocks don't already support.
 
-**What needed intervention.** Visual review caught defects that automated checks had passed:
-1. The builder canvas rendered no blocks (a width-measurement hook mounted before the grid existed).
-2. Runtime blocks clipped their content: hidden rows, pagination and fields.
-3. Action buttons were enabled for transitions the server would reject.
+**3. Fintech controls are built into the platform, so app builders can't omit them.**
+- **Separation of duties (maker-checker):** builders design and publish but can't execute actions; reviewers execute but can't edit or publish.
+- **Every decision is recorded with a reason:** actions require a reason (3–500 characters). Actor, before/after state and app revision are written to the audit log in the same transaction as the record change, so either both are saved or neither is.
+- **No double execution:** idempotency keys stop a retry or double-click from approving a refund twice. Record versions make two reviewers acting at once produce one success and one 409.
+- **Transition rules live on the server:** e.g. only a pending refund can be approved; invalid transitions get 409, whatever the UI shows.
 
-Each was fixed and gained a regression test. Lesson: green tests do not prove the UI is right; a human or agent still has to look at the screens.
+*Why:* in a financial setting the most likely real failures are a duplicate payout, a missing audit trail, or one person both configuring and approving. Putting these controls in each app would let a builder forget one.
 
-**Principal tradeoffs.**
-| Chose | Gave up |
-|---|---|
-| Fixed catalog of blocks and actions | Business-user freedom (formulas, custom screens) |
-| One page and one dataset per app | Multi-step or cross-dataset tools |
-| SQLite, single process, localhost | Scale, high availability, real deployment |
-| Server-derived actions and role checks | Fine-grained or record-level policy |
+**4. The server is the only source of truth for authority.**
+An action request names only a block, record, version, reason, revision and idempotency key. The server looks up the action and dataset from the *published* block; requests naming them directly are rejected (422). Roles come only from the server session, and disabled buttons are just UX.
+*Why:* anything the browser sends can be forged. *Gave up:* a flexible "run any action" API.
 
-**Verified behavior.** Unauthenticated access gets 401. Viewer and builder actions, and reviewer edits or publishes, get 403. Forged block IDs and unpublished actions get 404. Substituting a dataset or action in the request body gets 422. A missing reason is rejected; an invalid transition gets 409. Replaying a request with the same key returns the original result without a duplicate event. Of two concurrent decisions, one succeeds and one gets 409. A forced audit-insert failure rolls back the record update. Calls from a stale revision get 409 and the UI asks the user to reload. Draft edits stay invisible until published. Preview cannot perform actions. Data persists across restarts. A fresh checkout passes all checks.
+**5. Versioned drafts and immutable published revisions.**
+Saves use optimistic locking. Publish creates an immutable revision and writes a publish audit event in one transaction. Preview has no execute endpoint, and calls from a stale revision get 409.
+*Why:* live users never see half-finished edits, and there's a history of which configuration made each decision. *Gave up:* autosave and instant edits.
 
-**Production gaps (not addressed).** No SSO or MFA, and no access reviews. No record-level assignment or multi-tenancy. The audit log is not tamper-proof against database administrators, and there is no retention policy. No independent security review. No deployment, backups, monitoring or on-call. Seeded demo credentials only. The CI workflow is written but has not been run on GitHub.
+**6. Scope: one page, one dataset, local SQLite, synthetic data.**
+*Why:* this was the smallest scope that still proves the build-vs-buy question. It's reproducible with `npm ci` and needs no infrastructure. *Gave up:* multi-step or cross-dataset tools, scale and high availability, and real payment or KYC integrations.
+
+## Known gaps
+- No SSO or MFA, and no record-level assignment or multi-tenancy.
+- The audit log isn't tamper-proof against database administrators, and there's no retention policy.
+- No deployment or operations setup, and CI hasn't run on GitHub.
+- Visual review caught three UI bugs that the tests had passed. All are fixed and now have regression tests.
