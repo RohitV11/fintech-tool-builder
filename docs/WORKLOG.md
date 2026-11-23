@@ -168,3 +168,11 @@ All timestamps are UTC.
 - Corrected walkthrough copy after checking the audit renderer: the UI shows
   action, timestamp, reason, and actor; before/after snapshots are stored by
   the server but are not displayed by this renderer.
+- Fresh-checkout verification: cloned branch `phase-6-verification` to
+  `/tmp/fintech-tool-builder-phase6` and ran
+  `npm ci && npm run db:init && npm run build && npm run check && npm run test:e2e`
+  — passed. `npm run check` passed typecheck, 5 test files / 52 tests, and
+  build; Playwright passed all 3 E2E tests.
+- The fresh-checkout builds emitted the existing non-blocking Zod annotation
+  and >500 kB bundle-size warnings. The CI workflow itself was not executed.
+- **Verification complete:** 2026-11-23 05:20 UTC.
