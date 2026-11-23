@@ -52,18 +52,22 @@ export function ActionButtonRenderer({ block: rawBlock, ctx }: RendererProps) {
   const block = rawBlock as ActionButtonBlock;
   const recordId = ctx.selection[block.config.sourceTableId] ?? null;
   const record = ctx.selectedRecords[block.config.sourceTableId];
+  const availableActions = Array.isArray(record?.availableActions)
+    ? record.availableActions.filter((actionId): actionId is string => typeof actionId === "string")
+    : undefined;
+  const actionAvailable = availableActions?.includes(block.config.actionId) ?? false;
   const permitted = ctx.user.role === "reviewer";
-  const enabled = ctx.mode === "runtime" && permitted && !ctx.stale && Boolean(recordId && record);
-  const title =
-    ctx.mode === "preview"
-      ? "Disabled in preview"
-      : !permitted
-        ? "Reviewer role required"
-        : ctx.stale
-          ? "Reload the published app before deciding"
-        : !recordId
-          ? `Select a record in ${tableTitle(ctx, block.config.sourceTableId)}`
-          : undefined;
+  const enabled =
+    ctx.mode === "runtime" && permitted && !ctx.stale && Boolean(recordId && record && actionAvailable);
+  const title = (() => {
+    if (ctx.mode === "preview") return "Disabled in preview";
+    if (!permitted) return "Reviewer role required";
+    if (ctx.stale) return "Reload the published app before deciding";
+    if (!recordId) return `Select a record in ${tableTitle(ctx, block.config.sourceTableId)}`;
+    if (!record || !availableActions) return "Checking current status";
+    if (!actionAvailable) return "Not available for current status";
+    return undefined;
+  })();
 
   if (ctx.mode === "design") {
     return (
@@ -90,6 +94,9 @@ export function ActionButtonRenderer({ block: rawBlock, ctx }: RendererProps) {
       >
         {block.config.label}
       </button>
+      {record && availableActions && !actionAvailable && (
+        <p className="role-explanation">Not available for current status</p>
+      )}
       {!permitted && <p className="role-explanation">Reviewer role required</p>}
     </section>
   );

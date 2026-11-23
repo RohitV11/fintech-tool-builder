@@ -14,9 +14,13 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
+function canApplyDecision(row: Record<string, unknown>): boolean {
+  return row.status === "pending";
+}
+
 function applyDecision(status: "approved" | "rejected", label: string) {
   return (db: AppDatabase, row: Record<string, unknown>) => {
-    if (row.status !== "pending") throw new InvalidTransitionError();
+    if (!canApplyDecision(row)) throw new InvalidTransitionError();
     if (typeof row.id !== "string" || typeof row.version !== "number") {
       throw new Error("Refund row is missing its identifier or version");
     }
@@ -98,6 +102,7 @@ const refunds: DatasetAdapter = {
       label: "Approve refund",
       requiresReason: true,
       permission: "actions.execute",
+      canApply: canApplyDecision,
       apply: applyDecision("approved", "Approve"),
     },
     {
@@ -105,6 +110,7 @@ const refunds: DatasetAdapter = {
       label: "Reject refund",
       requiresReason: true,
       permission: "actions.execute",
+      canApply: canApplyDecision,
       apply: applyDecision("rejected", "Reject"),
     },
   ],

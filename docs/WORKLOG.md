@@ -208,3 +208,38 @@ All timestamps are UTC.
   `main` passed all 4 tests: assembly, builder regression, refund runtime, and
   legacy KYC/flags runtime actions.
 - **Verification complete:** 2026-11-23 05:31 UTC.
+
+## Runtime visual-review correction
+
+- **Start:** 2026-11-23 05:37 UTC (first runtime layout edit on `ui-polish`).
+- Fixed runtime and preview sizing so `layout.h` supplies a minimum height;
+  content can expand the blocks without card-level clipping. Preserved grid
+  placement and the narrow-screen y/x stack without changing builder canvas
+  sizing.
+- Kept the runtime table in a bounded horizontal scroll container, and made
+  the selected row's Record header inherit its highlight. Added server-side
+  `canApply` predicates for every dataset action; published and draft record
+  responses include `availableActions`. Runtime action buttons now disable
+  unavailable transitions with the requested hint, while execute still
+  rechecks transitions and returns 409 for invalid actions.
+- Added E2E checks for ten visible refund rows and pagination, multi-row KYC,
+  narrow-table horizontal scrolling, consistent selected-row highlighting,
+  and the unavailable Disable action for a disabled staging flag. Added API
+  coverage for published and draft action availability.
+- The first `npm run check` passed: typecheck, 5 Vitest files / 55 tests, and
+  production build. Build output retained the existing non-blocking Zod
+  annotation and >500 kB bundle-size warnings.
+- The first full `npm run test:e2e` run passed 4 of 5 tests and intermittently
+  missed the builder's action-button palette drop (expected 3 canvas blocks,
+  received 2). The focused `npx playwright test tests/e2e/builder.spec.ts`
+  retry passed, and the subsequent full `npm run test:e2e` passed all 5 tests.
+- The initial screenshot script assumed 25 matching refunds; the freshly
+  reset database returned 16. The capture was adjusted to verify the required
+  10 rows and pagination instead. Browser screenshots were visually checked:
+  `/home/ubuntu/screenshots/ui-polish-refund-1440.png`,
+  `/home/ubuntu/screenshots/ui-polish-kyc-1440.png`,
+  `/home/ubuntu/screenshots/ui-polish-flags-1440.png`, and
+  `/home/ubuntu/screenshots/ui-polish-refund-600.png`.
+- `npm run db:reset && npm start` — reset the demo data and left the rebuilt
+  server running on port 3000; HTTP 200, shell `8e7dc6`, Node PID `65605`.
+- **Verification and screenshots complete:** 2026-11-23 05:40 UTC.

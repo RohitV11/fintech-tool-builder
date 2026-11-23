@@ -13,6 +13,7 @@ export interface ActionDef {
   label: string;
   requiresReason: true;
   permission: "actions.execute";
+  canApply(row: Record<string, unknown>): boolean;
   apply(db: AppDatabase, row: Record<string, unknown>): { after: Record<string, unknown> };
 }
 

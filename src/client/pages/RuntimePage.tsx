@@ -217,6 +217,7 @@ export function RuntimePage() {
               style={{
                 gridColumn: `${block.layout.x + 1} / span ${block.layout.w}`,
                 gridRow: `${block.layout.y + 1} / span ${block.layout.h}`,
+                minHeight: `${block.layout.h * 30 + (block.layout.h - 1) * 12}px`,
               }}
             >
               <Renderer block={block as Block} ctx={ctx} />
